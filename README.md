@@ -101,7 +101,7 @@ If you are using [TextGen Webui](https://github.com/oobabooga/text-generation-we
 
 To run the application, activate the environment using your selected method of installation, then use the following command:
 ```
-streamlit run st_interface.py
+streamlit run st_interface_en.py
 ```
 
 ## How it works
