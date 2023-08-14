@@ -1,15 +1,16 @@
 # ChainPDF
 A Query-Answer chatbot for PDFs using local Large language and Embeddings models. Please read this readme fully before using.
 
+![image info](./pictures/upload.png)
+
 ## Table of Contents
 - [Features](#features)
 - [Installation](#installation)
 - [GPU](#gpu)
 - [Usage](#usage)
 - [How it works](#how-it-works)
+- [notebook example](#notebook-example)
 - [Contributing](#contributing)
-- [License](#license)
-
 
 ## Features
 
@@ -51,11 +52,11 @@ Select from Sentence Transformer or Instructor Transformer embedding models for 
 
 1. Clone the Repository:
     ```
-    git clone https://github.com/sebaxzero/ChainPDF
+    git clone https://github.com/sebaxzero/juridia
     ```
 2. Navigate to the Project Directory:
     ```
-    cd ChainPDF
+    cd juridia
     ```
 3. Create a Virtual Environment (Optional but recommended):
    - You can create a Python virtual environment using the following command:
@@ -99,7 +100,7 @@ If you are using [TextGen Webui](https://github.com/oobabooga/text-generation-we
 
 ## Usage
 
-To run the application, activate the environment using your selected method of installation, then use the following command:
+To run the application, activate the environment using your selected method of installation, for example `cmd_windows.bat` if instaled using TextGen Webui env, `init_conda_env.bat` for the provided conda env, then use the following command:
 ```
 streamlit run st_interface_en.py
 ```
@@ -110,26 +111,25 @@ uses an [Embedding model](https://python.langchain.com/docs/modules/data_connect
 
 ### Code Example
 This is a simplified example of the code:
+
 ```python
-from src.main import Memory, LLM, VectorStore, Chain
+from src.main import chatbot
 
-memory = Memory.get() # memory variable to save chat history
-llm = LLM.get(llm='TextGen') # llm variable
-retriever = VectorStore.retriever(k=3, db=VectorStore.get(name='example')) 
-
+chatbot = Chatbot(llm='TextGen', k=5, name='example')
 while True:
-    prompt = input('QUESTION: ')
-    answer, source_documents = Chain.query(prompt=prompt, chain=Chain.Get(llm=llm, retriever=retriever, memory=memory))
-    print("ANSWER:\n", answer, "\n\n")
+    prompt :str = input('query: ')
+    answer, source_documents = chatbot.query(prompt=prompt) 
+    print("answer:","\n",answer,"\n\n")
 ```
 
 This code reads any document (.pdf or .txt) placed in the `./Documents` directory, saving the generated VectorStore in `./Sessions/example/Index`. It then retrieves `3` relevant chunks of information passed to the chain, which is sent to the `Texgen webui API` to obtain an answer.
 
+## notebook example
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sebaxzero/Juridia/blob/main/PDF%20langchain%20example.ipynb)
+
+'PDF langchain example.ipynb' is a simplified version for better undertanding of how the code works, it is not meant for use.
+
 ## Contributing
 
 Contributions are welcome! Feel free to contribute to this project and make it even better.
-
-
-## License
-
-This project is licensed under the MIT License.

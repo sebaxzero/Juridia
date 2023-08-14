@@ -7,7 +7,7 @@ from src.main import Memory, Embeddings, VectorStore, Chain, Weights, Template, 
 
 from langchain.prompts import PromptTemplate
 
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.DEBUG)
 
 def callback():
     st.session_state.lock_widget = True
@@ -166,15 +166,16 @@ def main():
     with tab2:
         if st.session_state.query:
             sources = st.session_state.sources
-            for source in sources:
-                source_name = os.path.basename(source)
-                st.markdown(f'##### Fuente: {source_name}\n')
-                source_data = sources[source]
-                sorted_data = sorted(source_data.items(), key=lambda x: int(x[0]))
-                
-                for page, content in sorted_data:
-                    with st.expander(label=f'Pagina: {page}', expanded=False):
-                        st.markdown(content)
+            if sources is not None:
+                for source in sources:
+                    source_name = os.path.basename(source)
+                    st.markdown(f'##### Fuente: {source_name}\n')
+                    source_data = sources[source]
+                    sorted_data = sorted(source_data.items(), key=lambda x: int(x[0]))
+                    
+                    for page, content in sorted_data:
+                        with st.expander(label=f'Pagina: {page}', expanded=False):
+                            st.markdown(content)
         else:
             sources = st.markdown(body='Pregunte algo primero')
     

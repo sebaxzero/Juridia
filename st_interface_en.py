@@ -165,15 +165,16 @@ def main():
     with tab2:
         if st.session_state.query:
             sources = st.session_state.sources
-            for source in sources:
-                source_name = os.path.basename(source)
-                st.markdown(f'##### Source: {source_name}\n')
-                source_data = sources[source]
-                sorted_data = sorted(source_data.items(), key=lambda x: int(x[0]))
-                
-                for page, content in sorted_data:
-                    with st.expander(label=f'Page: {page}', expanded=False):
-                        st.markdown(content)
+            if sources is not None:
+                for source in sources:
+                    source_name = os.path.basename(source)
+                    st.markdown(f'##### Source: {source_name}\n')
+                    source_data = sources[source]
+                    sorted_data = sorted(source_data.items(), key=lambda x: int(x[0]))
+                    
+                    for page, content in sorted_data:
+                        with st.expander(label=f'Page: {page}', expanded=False):
+                            st.markdown(content)
         else:
             sources = st.markdown(body='make a query first')
     

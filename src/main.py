@@ -75,8 +75,8 @@ class Embeddings:
 
 class VectorStore:    
     @staticmethod
-    def create(persist_directory, splitted_docs, embeddings):
-        return Chroma.from_documents(documents=splitted_docs, embedding=embeddings, persist_directory=persist_directory)
+    def create(persist_directory, splitted_docs, embeddings, name):
+        return Chroma.from_documents(documents=splitted_docs, embedding=embeddings, persist_directory=persist_directory, collection_name='name')
     
     @staticmethod
     def create_Cloud(file_type, file_content, chunk_size:int = 512, chunk_overlap:int = 0, k:int = 2, model_name: str = 'sentence-transformers/all-MiniLM-L6-v2', device: str = 'cpu'):
@@ -93,7 +93,7 @@ class VectorStore:
         return Chroma(persist_directory=index_dir, embedding_function=embeddings)
     
     @staticmethod
-    def retriever(db, k:int = 2):
+    def retriever(db, k:int = 2,  **kwargs: Any):
         retriever = db.as_retriever()
         retriever.search_kwargs["k"] = k
         retriever.search_kwargs["distance_metric"] = "cos"
@@ -108,7 +108,7 @@ class VectorStore:
         return db
         
     @staticmethod
-    def get(name:str = "example", chunk_size:int = 512, chunk_overlap:int = 0, model_name: str = 'sentence-transformers/all-MiniLM-L6-v2', device: str = 'cpu'):
+    def get(name:str = "example", chunk_size:int = 512, chunk_overlap:int = 0, model_name: str = 'sentence-transformers/all-MiniLM-L6-v2', device: str = 'cpu', **kwargs: Any):
         doc_dir = './Documents'
         os.makedirs(doc_dir, exist_ok=True)
         index_dir = f'./Sessions/{name}/Index'
@@ -139,7 +139,7 @@ class VectorStore:
                 
             documents = Loader.load_local(directory=doc_dir)    
             splitted_docs = Splitter.split(documents=documents, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-            vectorstore = VectorStore.create(persist_directory=index_dir, splitted_docs=splitted_docs, embeddings=embeddings)
+            vectorstore = VectorStore.create(persist_directory=index_dir, splitted_docs=splitted_docs, embeddings=embeddings, name=name)
             
             logging.debug(f'deleting docs in {doc_dir}')
             file_list = os.listdir(doc_dir)
@@ -192,8 +192,10 @@ class LLM:
             max_tokens: int = 2048,
             top_k: int = 40,
             stopping_strings = ['### System:', '### User:', '\n\n'],
-            model_path: str = './Models/model.bin',
+            model_path: str = './Models/model.bin', **kwargs: Any
             ):
+        
+        
         
         if llm=='OpenAI':
             return OpenAI(
@@ -251,7 +253,7 @@ class Memory:
 
 class Chain:
     @staticmethod 
-    def get_no_mem(llm, retriever, condense_question_prompt = PromptTemplate.from_template(template=Template.get()), qa_prompt = PromptTemplate.from_template(template=Template.getQA())):
+    def get_no_mem(llm, retriever, condense_question_prompt = PromptTemplate.from_template(template=Template.get()), qa_prompt = PromptTemplate.from_template(template=Template.getQA()), **kwargs: Any):
         return ConversationalRetrievalChain.from_llm(
             llm=llm,
             retriever=retriever,
@@ -263,7 +265,7 @@ class Chain:
         )
         
     @staticmethod 
-    def Get(llm, retriever, memory, condense_question_prompt = PromptTemplate.from_template(template=Template.get()), qa_prompt = PromptTemplate.from_template(template=Template.getQA())):
+    def Get(llm, retriever, memory, condense_question_prompt = PromptTemplate.from_template(template=Template.get()), qa_prompt = PromptTemplate.from_template(template=Template.getQA()), **kwargs: Any):
         return ConversationalRetrievalChain.from_llm(
             llm=llm,
             retriever=retriever,
@@ -303,17 +305,35 @@ class Chain:
         answer, source_documents = Chain.process_response(res=res)
         return answer, source_documents
 
+class Chatbot:
+    def __init__(self, **kwargs):
+        self.memory = Memory.get()
+        self.llm = LLM.get(**kwargs)
+        self.db = VectorStore.get(**kwargs)
+        self.retriever = self.__set_retriever(**kwargs)
+        
+    def __set_retriever(self, **kwargs):
+        return VectorStore.retriever(db=self.db, **kwargs)
+
+    def set_llm(self, **kwargs):
+        self.llm = LLM.get(**kwargs)
+    
+    def set_db(self, **kwargs):                    
+        self.db = VectorStore.get(**kwargs)
+        
+    def set_retriever(self, **kwargs):
+        self.retriever = VectorStore.retriever(db=self.db, **kwargs)
+    
+    def query(self, prompt: str,  **kwargs: Any):
+        return Chain.query(prompt=prompt, chain=Chain.Get(llm=self.llm, retriever=self.retriever, memory=self.memory, **kwargs))
+    
+    def query_no_mem(self, prompt: str, chat_history, **kwargs: Any):
+        return Chain.query_no_mem(prompt=prompt, chain=Chain.get_no_mem(llm=self.llm, retriever=self.retriever), chat_history=chat_history,  **kwargs)
+
 if __name__ == "__main__":
-    memory = Memory.get()
-    llm = LLM.get(llm='TextGen')
-    retriever = VectorStore.retriever(k=3, db=VectorStore.get())
+    chatbot = Chatbot(llm='TextGen', k=5, name='example')
     while True:
-        prompt :str = input('ingrese consulta: ')
-        answer, source_documents = Chain.query(prompt=prompt, chain=Chain.Get(llm=llm, retriever=retriever, memory=memory)) 
-        print("Respuesta:","\n",answer,"\n\n")
-        print("Documentos de fuente:","\n\n")
-        for source, pages in source_documents.items():
-            print(f"Fuente: {source}")
-            for page, content in pages.items():
-                print(f"Página {page}:\n\n{content}\n\n")
+        prompt :str = input('query: ')
+        answer, source_documents = chatbot.query(prompt=prompt) 
+        print("answer:","\n",answer,"\n\n")
 
